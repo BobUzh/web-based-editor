@@ -1,7 +1,7 @@
 import type { ToolId } from './types'
 
 const tools: Array<{ id: ToolId; label: string; shape: string }> = [
-  { id: 'select', label: 'Select', shape: 'rotate-45 border-l-0 border-t-0' },
+  { id: 'zoom', label: 'Zoom', shape: 'rounded-full border-[3px] after:block after:h-2 after:w-0 after:rotate-[-45deg] after:border-l-2 after:border-current after:content-[""]' },
   { id: 'brush', label: 'Brush selection', shape: 'rounded-full' },
   { id: 'draw', label: 'Draw', shape: 'skew-x-[-18deg]' },
   { id: 'erase', label: 'Erase', shape: 'rounded-sm rotate-12' },
@@ -42,4 +42,3 @@ export function Sidebar({ activeTool, onSelectTool }: SidebarProps) {
     </aside>
   )
 }
-
