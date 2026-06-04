@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Canvas, FabricImage, Point } from 'fabric'
-import type { CanvasEvents } from 'fabric'
+import type { CanvasEvents, TMat2D } from 'fabric'
 import type { ToolId } from '../layout/types'
 
 const CANVAS_WIDTH = 1024
@@ -26,6 +26,24 @@ function getClientPoint(event: MouseEvent | PointerEvent | TouchEvent) {
   }
 
   return { x: touch.clientX, y: touch.clientY }
+}
+
+function clampViewportToWorkspace(canvas: Canvas) {
+  const zoom = canvas.getZoom()
+
+  if (zoom <= MIN_ZOOM) {
+    canvas.setViewportTransform([MIN_ZOOM, 0, 0, MIN_ZOOM, 0, 0])
+    return
+  }
+
+  const nextViewportTransform = [...canvas.viewportTransform] as TMat2D
+  const minX = CANVAS_WIDTH - CANVAS_WIDTH * zoom
+  const minY = CANVAS_HEIGHT - CANVAS_HEIGHT * zoom
+
+  nextViewportTransform[4] = Math.min(0, Math.max(minX, nextViewportTransform[4]))
+  nextViewportTransform[5] = Math.min(0, Math.max(minY, nextViewportTransform[5]))
+
+  canvas.setViewportTransform(nextViewportTransform)
 }
 
 async function loadImageIntoCanvas(canvas: Canvas, imageFile: File, signal: AbortSignal) {
@@ -117,6 +135,8 @@ export function CanvasContainer({ activeTool, imageFile = null }: CanvasContaine
     }
 
     updateCursor('grab')
+    clampViewportToWorkspace(canvas)
+    canvas.requestRenderAll()
 
     const handleMouseWheel = ({ e, viewportPoint }: CanvasEvents['mouse:wheel']) => {
       e.preventDefault()
@@ -131,13 +151,14 @@ export function CanvasContainer({ activeTool, imageFile = null }: CanvasContaine
       }
 
       canvas.zoomToPoint(viewportPoint, nextZoom)
+      clampViewportToWorkspace(canvas)
       canvas.requestRenderAll()
     }
 
     const handleMouseDown = ({ e }: CanvasEvents['mouse:down']) => {
       const point = getClientPoint(e)
 
-      if (!point) {
+      if (!point || canvas.getZoom() <= MIN_ZOOM) {
         return
       }
 
@@ -158,6 +179,7 @@ export function CanvasContainer({ activeTool, imageFile = null }: CanvasContaine
       }
 
       canvas.relativePan(new Point(nextPoint.x - lastDragPointRef.current.x, nextPoint.y - lastDragPointRef.current.y))
+      clampViewportToWorkspace(canvas)
       lastDragPointRef.current = nextPoint
       canvas.requestRenderAll()
     }
